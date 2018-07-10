@@ -16,3 +16,7 @@ const nodeFromData = (datum, createNodeId) => {
 }
 
 exports.nodeFromData = nodeFromData
+
+exports.normalizeTypeName = function (typeName) {
+  return typeName.replace(/[_-]{2,}/g, `_`).replace(/[_-]+$/g, ``);
+};

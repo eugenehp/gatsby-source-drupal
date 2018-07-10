@@ -1,9 +1,9 @@
 const axios = require(`axios`)
 const crypto = require(`crypto`)
 const _ = require(`lodash`)
-const { createRemoteFileNode } = require(`gatsby-source-filesystem`)
+const { createRemoteFileNode } = require(`@ehp/gatsby-source-filesystem`)
 const { URL } = require(`url`)
-const { nodeFromData } = require(`./normalize`)
+const { nodeFromData, normalizeTypeName } = require(`./normalize`)
 
 // Get content digest of node.
 const createContentDigest = obj =>
@@ -79,26 +79,44 @@ exports.sourceNodes = async (
   })
 
   // Create back references
-  const backRefs = {}
-  _.each(allData, contentType => {
-    if (!contentType) return
-    _.each(contentType.data, datum => {
-      if (datum.relationships) {
-        _.each(datum.relationships, (v, k) => {
-          if (!v.data) return
-          if (ids[v.data.id]) {
-            if (!backRefs[v.data.id]) {
-              backRefs[v.data.id] = []
-            }
-            backRefs[v.data.id].push({
-              id: datum.id,
-              type: datum.type,
-            })
-          }
-        })
+  backRefs = {};
+
+  addBackRef = function addBackRef(sourceId, linkedId, relationshipName, type) {
+    if (ids[linkedId]) {
+      if (typeof backRefs[linkedId] === `undefined`) {
+        backRefs[linkedId] = [];
       }
-    })
-  })
+      backRefs[linkedId].push({
+        id: sourceId,
+        type: normalizeTypeName(`backref_${relationshipName}`)
+      });
+      backRefs[linkedId].push({
+        id: sourceId,
+        type: normalizeTypeName(`backref_${relationshipName}_${type}`)
+      });
+    }
+  };
+
+  _.each(allData, function (contentType) {
+    if (!contentType) return;
+    _.each(contentType.data, function (datum) {
+      if (datum.relationships) {
+        _.each(datum.relationships, function (v, k) {
+          if (!v.data) {
+            return;
+          }
+
+          if (_.isArray(v.data)) {
+            v.data.forEach(function (data) {
+              addBackRef(datum.id, data.id, k, contentType.type);
+            });
+          } else {
+            addBackRef(datum.id, v.data.id, k, contentType.type);
+          }
+        });
+      }
+    });
+  });
 
   // Process nodes
   const nodes = []
@@ -110,22 +128,36 @@ exports.sourceNodes = async (
 
       // Add relationships
       if (datum.relationships) {
+        var addedRelationships = false;
         node.relationships = {}
         _.each(datum.relationships, (v, k) => {
           if (!v.data) return
-          if (ids[v.data.id]) {
-            node.relationships[`${k}___NODE`] = createNodeId(v.data.id)
-          }
-          // Add back reference relationships.
-          if (backRefs[datum.id]) {
-            backRefs[datum.id].forEach(
-              ref =>
-                (node.relationships[`${ref.type}___NODE`] = createNodeId(
-                  ref.id
-                ))
-            )
+          
+          if (_.isArray(v.data) && v.data.length > 0) {
+            node.relationships[`${normalizeTypeName(k)}___NODE`] = v.data.map(function (data) {
+              return data.id;
+            });
+            addedRelationships = true;
+          } else if (ids[v.data.id]) {
+            node.relationships[`${normalizeTypeName(k)}___NODE`] = v.data.id;
+            addedRelationships = true;
           }
         })
+
+        if (backRefs[datum.id]) {
+          backRefs[datum.id].forEach(function (ref) {
+            if (!node.relationships[`${ref.type}___NODE`]) {
+              node.relationships[`${ref.type}___NODE`] = [];
+            }
+
+            node.relationships[`${ref.type}___NODE`].push(ref.id);
+            addedRelationships = true;
+          });
+        }
+
+        if (!addedRelationships) {
+          delete node.relationships;
+        }
       }
       node.internal.contentDigest = createContentDigest(node)
       nodes.push(node)
