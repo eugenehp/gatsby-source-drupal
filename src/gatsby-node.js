@@ -79,7 +79,7 @@ exports.sourceNodes = async (
   })
 
   // Create back references
-  backRefs = {};
+  var backRefs = {};
 
   addBackRef = function addBackRef(sourceId, linkedId, relationshipName, type) {
     if (ids[linkedId]) {
