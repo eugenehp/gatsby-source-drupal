@@ -1,9 +1,9 @@
-const nodeFromData = (datum, createNodeId) => {
+const nodeFromData = (datum) => {
   const { attributes: { id: _attributes_id, ...attributes } = {} } = datum
   const preservedId =
     typeof _attributes_id !== `undefined` ? { _attributes_id } : {}
   return {
-    id: createNodeId(datum.id),
+    id: datum.id,
     drupal_id: datum.id,
     parent: null,
     children: [],

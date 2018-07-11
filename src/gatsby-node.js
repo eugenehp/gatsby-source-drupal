@@ -1,7 +1,7 @@
 const axios = require(`axios`)
 const crypto = require(`crypto`)
 const _ = require(`lodash`)
-const { createRemoteFileNode } = require(`@ehp/gatsby-source-filesystem`)
+const { createRemoteFileNode } = require(`gatsby-source-filesystem`)
 const { URL } = require(`url`)
 const { nodeFromData, normalizeTypeName } = require(`./normalize`)
 
@@ -81,7 +81,7 @@ exports.sourceNodes = async (
   // Create back references
   var backRefs = {};
 
-  addBackRef = function addBackRef(sourceId, linkedId, relationshipName, type) {
+  const addBackRef = function addBackRef(sourceId, linkedId, relationshipName, type) {
     if (ids[linkedId]) {
       if (typeof backRefs[linkedId] === `undefined`) {
         backRefs[linkedId] = [];
@@ -124,7 +124,7 @@ exports.sourceNodes = async (
     if (!contentType) return
 
     _.each(contentType.data, datum => {
-      const node = nodeFromData(datum, createNodeId)
+      const node = nodeFromData(datum)
 
       // Add relationships
       if (datum.relationships) {
