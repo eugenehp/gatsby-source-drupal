@@ -1,9 +1,17 @@
 const axios = require(`axios`)
+const axiosRetry require(`axios-retry`)
 const crypto = require(`crypto`)
 const _ = require(`lodash`)
 const { createRemoteFileNode } = require(`gatsby-source-filesystem`)
 const { URL } = require(`url`)
 const { nodeFromData, normalizeTypeName } = require(`./normalize`)
+
+axiosRetry(axios, { 
+  retries: 999,
+  retryDelay: (retryCount) => {
+    return retryCount * 1000;
+  }
+});
 
 // Get content digest of node.
 const createContentDigest = obj =>
