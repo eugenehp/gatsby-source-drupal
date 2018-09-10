@@ -1,5 +1,5 @@
 const axios = require(`axios`)
-const axiosRetry require(`axios-retry`)
+const axiosRetry = require(`axios-retry`)
 const crypto = require(`crypto`)
 const _ = require(`lodash`)
 const { createRemoteFileNode } = require(`gatsby-source-filesystem`)
